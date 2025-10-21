@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="CopyCoPilotReferencesExtension.0b95f3f5-b282-4fdf-a015-6afee718201d" Version="1.0" Language="en-US" Publisher="Eddie Green" />
+        <Identity Id="CopyCoPilotReferencesExtension.0b95f3f5-b282-4fdf-a015-6afee718201d" Version="1.1" Language="en-US" Publisher="Eddie Green" />
         <DisplayName>Copy CoPilot References</DisplayName>
         <Description xml:space="preserve">Copy selected file references for CoPilot to the clipboard.</Description>
         <Icon>Resources\Favicon.ico</Icon>

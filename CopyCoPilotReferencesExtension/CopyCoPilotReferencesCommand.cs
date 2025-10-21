@@ -72,6 +72,44 @@ namespace CopyCoPilotReferencesExtension
 
         #region Private Methods
 
+        // Lightweight implementation of Path.GetRelativePath for .NET Framework
+        private static string GetRelativePath(string basePath, string targetPath)
+        {
+            if(string.IsNullOrEmpty(basePath) || string.IsNullOrEmpty(targetPath))
+            {
+                return targetPath ?? string.Empty;
+            }
+
+            try
+            {
+                // Ensure directories end with separator
+                if(!basePath.EndsWith(Path.DirectorySeparatorChar.ToString()) && !basePath.EndsWith(Path.AltDirectorySeparatorChar.ToString()))
+                {
+                    basePath += Path.DirectorySeparatorChar;
+                }
+
+                var baseUri = new Uri(basePath, UriKind.Absolute);
+                var targetUri = new Uri(targetPath, UriKind.Absolute);
+
+                // Different volume -> cannot make relative
+                if(baseUri.Scheme != targetUri.Scheme || !string.Equals(baseUri.Authority, targetUri.Authority, StringComparison.OrdinalIgnoreCase))
+                {
+                    return targetPath;
+                }
+
+                var relativeUri = baseUri.MakeRelativeUri(targetUri);
+                var relativePath = Uri.UnescapeDataString(relativeUri.ToString());
+
+                // Convert URI separators to platform separators first, then we will normalize to '/' for Copilot
+                relativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
+                return relativePath;
+            }
+            catch
+            {
+                return targetPath;
+            }
+        }
+
         private void Execute(object sender, EventArgs e)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -92,12 +130,15 @@ namespace CopyCoPilotReferencesExtension
                                 var fullPath = projItem.FileNames[1];
                                 var relativePath = fullPath;
 
-                                if(!string.IsNullOrEmpty(solutionDir) && fullPath.StartsWith(solutionDir, StringComparison.OrdinalIgnoreCase))
+                                if(!string.IsNullOrEmpty(solutionDir))
                                 {
-                                    relativePath = fullPath.Substring(solutionDir.Length + 1);
+                                    // Always compute relative path (will include .. for files outside solution directory)
+                                    relativePath = GetRelativePath(solutionDir, fullPath);
                                 }
 
-                                return $"#file:'{relativePath.Replace('\\', '/')}'";
+                                // Normalize to forward slashes for Copilot reference format
+                                relativePath = relativePath.Replace('\\', '/');
+                                return $"#file:'{relativePath}'";
                             }
                         )
                         .ToList();
