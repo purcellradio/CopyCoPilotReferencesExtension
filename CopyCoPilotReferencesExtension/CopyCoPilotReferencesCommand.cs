@@ -7,6 +7,7 @@ using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
+using System.Collections.Generic;
 
 namespace CopyCoPilotReferencesExtension
 {
@@ -14,7 +15,18 @@ namespace CopyCoPilotReferencesExtension
     {
         #region Static
 
-        public const int CommandId = 0x0100;
+        public const int CommandId = 0x0100; // Primary command ID
+
+        private static readonly int[] AdditionalCommandIds = new[]
+        {
+            0x0110,
+            0x0111,
+            0x0112,
+            0x0113,
+            0x0114,
+            0x0115
+        };
+
         public static readonly Guid CommandSet = new Guid("e903358c-f298-4653-a50b-c7853569396f");
 
         #endregion
@@ -38,10 +50,12 @@ namespace CopyCoPilotReferencesExtension
             this.package = package ?? throw new ArgumentNullException(nameof(package));
             commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
-            var menuCommandID = new CommandID(CommandSet, CommandId);
-            var menuItem = new OleMenuCommand(Execute, menuCommandID);
-            menuItem.BeforeQueryStatus += OnBeforeQueryStatus;
-            commandService.AddCommand(menuItem);
+            RegisterCommand(commandService, CommandId);
+
+            foreach(var id in AdditionalCommandIds)
+            {
+                RegisterCommand(commandService, id);
+            }
         }
 
         #endregion
@@ -50,11 +64,37 @@ namespace CopyCoPilotReferencesExtension
 
         private void OnBeforeQueryStatus(object sender, EventArgs e)
         {
-            if(sender is OleMenuCommand myCommand)
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var cmd = sender as OleMenuCommand;
+
+            if(cmd == null)
             {
-                myCommand.Visible = true;
-                myCommand.Enabled = true;
+                return;
             }
+
+            if(!(Package.GetGlobalService(typeof(DTE)) is DTE2 dte) || dte.Solution == null)
+            {
+                cmd.Visible = false;
+                cmd.Enabled = false;
+
+                return;
+            }
+
+            var uih = dte.ToolWindows.SolutionExplorer;
+
+            if(!(uih.SelectedItems is Array selectedItems) || selectedItems.Length == 0)
+            {
+                cmd.Visible = false;
+                cmd.Enabled = false;
+
+                return;
+            }
+
+            var hasUsable = selectedItems.Cast<UIHierarchyItem>()
+                .Any(item => IsUsableObject(item.Object));
+
+            cmd.Visible = hasUsable;
+            cmd.Enabled = hasUsable;
         }
 
         #endregion
@@ -72,7 +112,58 @@ namespace CopyCoPilotReferencesExtension
 
         #region Private Methods
 
-        // Lightweight implementation of Path.GetRelativePath for .NET Framework
+        private void RegisterCommand(OleMenuCommandService commandService, int commandId)
+        {
+            var menuCommandID = new CommandID(CommandSet, commandId);
+            var menuItem = new OleMenuCommand(Execute, menuCommandID);
+            menuItem.BeforeQueryStatus += OnBeforeQueryStatus;
+            commandService.AddCommand(menuItem);
+        }
+
+        private static bool IsUsableObject(object obj)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if(obj is ProjectItem pi)
+            {
+                if(string.Equals(
+                       pi.Kind,
+                       Constants.vsProjectItemKindPhysicalFolder,
+                       StringComparison.OrdinalIgnoreCase
+                   ))
+                {
+                    return true;
+                }
+
+                if(pi.FileCount > 0)
+                {
+                    for(short i = 1; i <= pi.FileCount; i++)
+                    {
+                        var path = pi.FileNames[i];
+
+                        if(!string.IsNullOrEmpty(path) && File.Exists(path))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            if(obj is Project)
+            {
+                return true;
+            }
+
+            if(obj is Solution)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private static string GetRelativePath(string basePath, string targetPath)
         {
             if(string.IsNullOrEmpty(basePath) || string.IsNullOrEmpty(targetPath))
@@ -82,7 +173,6 @@ namespace CopyCoPilotReferencesExtension
 
             try
             {
-                // Ensure directories end with separator
                 if(!basePath.EndsWith(Path.DirectorySeparatorChar.ToString()) && !basePath.EndsWith(Path.AltDirectorySeparatorChar.ToString()))
                 {
                     basePath += Path.DirectorySeparatorChar;
@@ -91,17 +181,19 @@ namespace CopyCoPilotReferencesExtension
                 var baseUri = new Uri(basePath, UriKind.Absolute);
                 var targetUri = new Uri(targetPath, UriKind.Absolute);
 
-                // Different volume -> cannot make relative
-                if(baseUri.Scheme != targetUri.Scheme || !string.Equals(baseUri.Authority, targetUri.Authority, StringComparison.OrdinalIgnoreCase))
+                if(baseUri.Scheme != targetUri.Scheme || !string.Equals(
+                       baseUri.Authority,
+                       targetUri.Authority,
+                       StringComparison.OrdinalIgnoreCase
+                   ))
                 {
                     return targetPath;
                 }
 
                 var relativeUri = baseUri.MakeRelativeUri(targetUri);
                 var relativePath = Uri.UnescapeDataString(relativeUri.ToString());
-
-                // Convert URI separators to platform separators first, then we will normalize to '/' for Copilot
                 relativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
+
                 return relativePath;
             }
             catch
@@ -110,44 +202,135 @@ namespace CopyCoPilotReferencesExtension
             }
         }
 
+        private static void CollectFilePathsFromProjectItem(ProjectItem projectItem, HashSet<string> results)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if(projectItem == null)
+            {
+                return;
+            }
+
+            if(string.Equals(
+                   projectItem.Kind,
+                   Constants.vsProjectItemKindPhysicalFolder,
+                   StringComparison.OrdinalIgnoreCase
+               ))
+            {
+                foreach(ProjectItem child in projectItem.ProjectItems)
+                {
+                    CollectFilePathsFromProjectItem(child, results);
+                }
+
+                return;
+            }
+
+            if(projectItem.FileCount > 0)
+            {
+                for(short i = 1; i <= projectItem.FileCount; i++)
+                {
+                    var path = projectItem.FileNames[i];
+
+                    if(!string.IsNullOrEmpty(path) && File.Exists(path))
+                    {
+                        results.Add(path);
+                    }
+                }
+            }
+
+            foreach(ProjectItem child in projectItem.ProjectItems)
+            {
+                CollectFilePathsFromProjectItem(child, results);
+            }
+        }
+
+        private static void CollectFilePathsFromProject(Project project, HashSet<string> results)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if(project == null)
+            {
+                return;
+            }
+
+            try
+            {
+                foreach(ProjectItem item in project.ProjectItems)
+                {
+                    CollectFilePathsFromProjectItem(item, results);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static IEnumerable<string> GetFilePathsFromHierarchyObject(object hierarchyObject)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var results = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if(hierarchyObject is ProjectItem projectItem)
+            {
+                CollectFilePathsFromProjectItem(projectItem, results);
+            }
+            else if(hierarchyObject is Project project)
+            {
+                CollectFilePathsFromProject(project, results);
+            }
+            else if(hierarchyObject is Solution solution)
+            {
+                foreach(Project proj in solution.Projects)
+                {
+                    CollectFilePathsFromProject(proj, results);
+                }
+            }
+
+            return results;
+        }
+
         private void Execute(object sender, EventArgs e)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if(Package.GetGlobalService(typeof(DTE)) is DTE2 dte && dte.Solution != null && !string.IsNullOrEmpty(dte.Solution.FullName))
+            if(!(Package.GetGlobalService(typeof(DTE)) is DTE2 dte) || dte.Solution == null || string.IsNullOrEmpty(dte.Solution.FullName))
             {
-                var uih = dte.ToolWindows.SolutionExplorer;
+                return;
+            }
 
-                if(uih.SelectedItems is Array selectedItems && selectedItems.Length > 0)
-                {
-                    var solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
+            var uih = dte.ToolWindows.SolutionExplorer;
 
-                    var filePaths = selectedItems.Cast<UIHierarchyItem>()
-                        .Select(item => item.Object as ProjectItem)
-                        .Where(projItem => projItem != null && projItem.FileCount > 0)
-                        .Select(projItem =>
-                            {
-                                var fullPath = projItem.FileNames[1];
-                                var relativePath = fullPath;
+            if(!(uih.SelectedItems is Array selectedItems) || selectedItems.Length == 0)
+            {
+                return;
+            }
 
-                                if(!string.IsNullOrEmpty(solutionDir))
-                                {
-                                    // Always compute relative path (will include .. for files outside solution directory)
-                                    relativePath = GetRelativePath(solutionDir, fullPath);
-                                }
+            var solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
 
-                                // Normalize to forward slashes for Copilot reference format
-                                relativePath = relativePath.Replace('\\', '/');
-                                return $"#file:'{relativePath}'";
-                            }
-                        )
-                        .ToList();
+            var allFilePaths = selectedItems.Cast<UIHierarchyItem>()
+                .SelectMany(item => GetFilePathsFromHierarchyObject(item.Object))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
-                    if(filePaths.Any())
+            var formattedReferences = allFilePaths.Select(fullPath =>
                     {
-                        Clipboard.SetText(string.Join(" ", filePaths));
+                        var relativePath = fullPath;
+
+                        if(!string.IsNullOrEmpty(solutionDir))
+                        {
+                            relativePath = GetRelativePath(solutionDir, fullPath);
+                        }
+
+                        relativePath = relativePath.Replace('\\', '/');
+
+                        return $"#file:'{relativePath}'";
                     }
-                }
+                )
+                .ToList();
+
+            if(formattedReferences.Any())
+            {
+                Clipboard.SetText(string.Join(" ", formattedReferences));
             }
         }
 

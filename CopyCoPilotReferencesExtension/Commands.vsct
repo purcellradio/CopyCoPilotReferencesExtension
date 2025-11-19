@@ -1,39 +1,282 @@
 <?xml version="1.0" encoding="utf-8"?>
-<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:vs="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable/VS">
-  <!--This CommandTable file is adapted from the standard template to be self-contained.-->
 
-  <Commands package="guidCopyFilePathsPackage">
+<CommandTable
+  xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable"
+  xmlns:vs="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable/VS">
+  <!--This CommandTable file is adapted from the standard template to be self-contained.-->
+  <!-- Included context menus per VS SDK (Microsoft.VisualStudio.Shell.VsMenus):
+       IDM_VS_CTXT_ITEMNODE       - single item (file) selection
+       IDM_VS_CTXT_PROJNODE       - project root node
+       IDM_VS_CTXT_FOLDERNODE     - folder within project
+       IDM_VS_CTXT_SOLUTION       - solution root node
+       IDM_VS_CTXT_XPROJ_MULTIITEM- multi selection spanning multiple projects (no project roots)
+       IDM_VS_CTXT_PROJ_MULTIITEM - multi selection within a single project
+       IDM_VS_CTXT_XPROJ_PROJITEM - multi selection spanning multiple projects including project root(s)
+       DynamicVisibility used; command logic filters actual applicability.
+  -->
+  <!-- Command table with icon support. -->
+  <Symbols>
+    <GuidSymbol
+      name="CopyCoPilotReferencesIcon"
+      value="{f5e53b6a-4f5f-4f87-b6d9-167b162f3b8b}">
+      <IDSymbol
+        name="CopyCoPilotReferencesIcon1"
+        value="1" />
+    </GuidSymbol>
+    <GuidSymbol
+      name="guidCopyFilePathsPackage"
+      value="{f5e53b6a-4f5f-4f87-b6d9-167b162f3b8b}" />
+    <GuidSymbol
+      name="guidCopyCoPilotReferencesPackageCmdSet"
+      value="{e903358c-f298-4653-a50b-c7853569396f}">
+      <IDSymbol
+        name="MyMenuGroup"
+        value="0x1020" />
+      <IDSymbol
+        name="ProjectMenuGroup"
+        value="0x1021" />
+      <IDSymbol
+        name="FolderMenuGroup"
+        value="0x1022" />
+      <IDSymbol
+        name="SolutionMenuGroup"
+        value="0x1023" />
+      <IDSymbol
+        name="XProjMultiMenuGroup"
+        value="0x1024" />
+      <IDSymbol
+        name="ProjMultiMenuGroup"
+        value="0x1025" />
+      <IDSymbol
+        name="XProjProjItemMenuGroup"
+        value="0x1026" />
+      <IDSymbol
+        name="CopyCoPilotReferencesCommandId"
+        value="0x0100" />
+      <IDSymbol
+        name="CopyCoPilotReferencesProjectCommandId"
+        value="0x0110" />
+      <IDSymbol
+        name="CopyCoPilotReferencesFolderCommandId"
+        value="0x0111" />
+      <IDSymbol
+        name="CopyCoPilotReferencesSolutionCommandId"
+        value="0x0112" />
+      <IDSymbol
+        name="CopyCoPilotReferencesXProjMultiCommandId"
+        value="0x0113" />
+      <IDSymbol
+        name="CopyCoPilotReferencesProjMultiCommandId"
+        value="0x0114" />
+      <IDSymbol
+        name="CopyCoPilotReferencesXProjProjItemCommandId"
+        value="0x0115" />
+    </GuidSymbol>
+    <GuidSymbol
+      name="guidSHLMainMenu"
+      value="{d309f791-903f-11d0-9efc-00a0c911004f}">
+      <IDSymbol
+        name="IDM_VS_CTXT_ITEMNODE"
+        value="0x0430" />
+      <IDSymbol
+        name="IDM_VS_CTXT_PROJNODE"
+        value="0x0402" />
+      <IDSymbol
+        name="IDM_VS_CTXT_FOLDERNODE"
+        value="0x0431" />
+      <IDSymbol
+        name="IDM_VS_CTXT_SOLUTION"
+        value="0x0426" />
+      <IDSymbol
+        name="IDM_VS_CTXT_XPROJ_MULTIITEM"
+        value="0x0490" />
+      <IDSymbol
+        name="IDM_VS_CTXT_PROJ_MULTIITEM"
+        value="0x048F" />
+      <IDSymbol
+        name="IDM_VS_CTXT_XPROJ_PROJITEM"
+        value="0x0491" />
+    </GuidSymbol>
+  </Symbols>
+  <Commands
+    package="guidCopyFilePathsPackage">
+    <Bitmaps>
+      <Bitmap
+        guid="CopyCoPilotReferencesIcon"
+        href="Resources\GitHub-Copilot-logo-context.png"
+        usedList="CopyCoPilotReferencesIcon1" />
+    </Bitmaps>
     <Groups>
-      <Group guid="guidCopyCoPilotReferencesPackageCmdSet" id="MyMenuGroup" priority="0x0600">
-        <!--Parent to the context menu for items in Solution Explorer.-->
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
+      <Group
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="MyMenuGroup"
+        priority="0x0600">
+        <Parent
+          guid="guidSHLMainMenu"
+          id="IDM_VS_CTXT_ITEMNODE" />
+      </Group>
+      <Group
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="ProjectMenuGroup"
+        priority="0x0600">
+        <Parent
+          guid="guidSHLMainMenu"
+          id="IDM_VS_CTXT_PROJNODE" />
+      </Group>
+      <Group
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="FolderMenuGroup"
+        priority="0x0600">
+        <Parent
+          guid="guidSHLMainMenu"
+          id="IDM_VS_CTXT_FOLDERNODE" />
+      </Group>
+      <Group
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="SolutionMenuGroup"
+        priority="0x0600">
+        <Parent
+          guid="guidSHLMainMenu"
+          id="IDM_VS_CTXT_SOLUTION" />
+      </Group>
+      <Group
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="XProjMultiMenuGroup"
+        priority="0x0600">
+        <Parent
+          guid="guidSHLMainMenu"
+          id="IDM_VS_CTXT_XPROJ_MULTIITEM" />
+      </Group>
+      <Group
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="ProjMultiMenuGroup"
+        priority="0x0600">
+        <Parent
+          guid="guidSHLMainMenu"
+          id="IDM_VS_CTXT_PROJ_MULTIITEM" />
+      </Group>
+      <Group
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="XProjProjItemMenuGroup"
+        priority="0x0600">
+        <Parent
+          guid="guidSHLMainMenu"
+          id="IDM_VS_CTXT_XPROJ_PROJITEM" />
       </Group>
     </Groups>
-
     <Buttons>
-      <Button guid="guidCopyCoPilotReferencesPackageCmdSet" id="CopyCoPilotReferencesCommandId" priority="0x0100" type="Button">
-        <Parent guid="guidCopyCoPilotReferencesPackageCmdSet" id="MyMenuGroup" />
+      <Button
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="CopyCoPilotReferencesCommandId"
+        priority="0x0100"
+        type="Button">
+        <Parent
+          guid="guidCopyCoPilotReferencesPackageCmdSet"
+          id="MyMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Icon
+          guid="CopyCoPilotReferencesIcon"
+          id="CopyCoPilotReferencesIcon1" />
+        <Strings>
+          <ButtonText>Copy CoPilot references</ButtonText>
+        </Strings>
+      </Button>
+      <Button
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="CopyCoPilotReferencesProjectCommandId"
+        priority="0x0100"
+        type="Button">
+        <Parent
+          guid="guidCopyCoPilotReferencesPackageCmdSet"
+          id="ProjectMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Icon
+          guid="CopyCoPilotReferencesIcon"
+          id="CopyCoPilotReferencesIcon1" />
+        <Strings>
+          <ButtonText>Copy CoPilot references</ButtonText>
+        </Strings>
+      </Button>
+      <Button
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="CopyCoPilotReferencesFolderCommandId"
+        priority="0x0100"
+        type="Button">
+        <Parent
+          guid="guidCopyCoPilotReferencesPackageCmdSet"
+          id="FolderMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Icon
+          guid="CopyCoPilotReferencesIcon"
+          id="CopyCoPilotReferencesIcon1" />
+        <Strings>
+          <ButtonText>Copy CoPilot references</ButtonText>
+        </Strings>
+      </Button>
+      <Button
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="CopyCoPilotReferencesSolutionCommandId"
+        priority="0x0100"
+        type="Button">
+        <Parent
+          guid="guidCopyCoPilotReferencesPackageCmdSet"
+          id="SolutionMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Icon
+          guid="CopyCoPilotReferencesIcon"
+          id="CopyCoPilotReferencesIcon1" />
+        <Strings>
+          <ButtonText>Copy CoPilot references</ButtonText>
+        </Strings>
+      </Button>
+      <Button
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="CopyCoPilotReferencesXProjMultiCommandId"
+        priority="0x0100"
+        type="Button">
+        <Parent
+          guid="guidCopyCoPilotReferencesPackageCmdSet"
+          id="XProjMultiMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Icon
+          guid="CopyCoPilotReferencesIcon"
+          id="CopyCoPilotReferencesIcon1" />
+        <Strings>
+          <ButtonText>Copy CoPilot references</ButtonText>
+        </Strings>
+      </Button>
+      <Button
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="CopyCoPilotReferencesProjMultiCommandId"
+        priority="0x0100"
+        type="Button">
+        <Parent
+          guid="guidCopyCoPilotReferencesPackageCmdSet"
+          id="ProjMultiMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Icon
+          guid="CopyCoPilotReferencesIcon"
+          id="CopyCoPilotReferencesIcon1" />
+        <Strings>
+          <ButtonText>Copy CoPilot references</ButtonText>
+        </Strings>
+      </Button>
+      <Button
+        guid="guidCopyCoPilotReferencesPackageCmdSet"
+        id="CopyCoPilotReferencesXProjProjItemCommandId"
+        priority="0x0100"
+        type="Button">
+        <Parent
+          guid="guidCopyCoPilotReferencesPackageCmdSet"
+          id="XProjProjItemMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Icon
+          guid="CopyCoPilotReferencesIcon"
+          id="CopyCoPilotReferencesIcon1" />
         <Strings>
           <ButtonText>Copy CoPilot references</ButtonText>
         </Strings>
       </Button>
     </Buttons>
   </Commands>
-
-  <Symbols>
-    <!--This is the GUID for the VSPackage that provides this command, generated by the package template.-->
-    <GuidSymbol name="guidCopyFilePathsPackage" value="{f5e53b6a-4f5f-4f87-b6d9-167b162f3b8b}" />
-
-    <!--This is the GUID for the command set.-->
-    <GuidSymbol name="guidCopyCoPilotReferencesPackageCmdSet" value="{e903358c-f298-4653-a50b-c7853569396f}">
-      <IDSymbol name="MyMenuGroup" value="0x1020" />
-      <IDSymbol name="CopyCoPilotReferencesCommandId" value="0x0100" />
-    </GuidSymbol>
-
-    <!--This is the GUID for the standard Visual Studio shell command set.-->
-    <GuidSymbol name="guidSHLMainMenu" value="{d309f791-903f-11d0-9efc-00a0c911004f}">
-      <IDSymbol name="IDM_VS_CTXT_ITEMNODE" value="0x0430" />
-    </GuidSymbol>
-
-  </Symbols>
 </CommandTable>
